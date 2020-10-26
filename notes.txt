@@ -1,0 +1,7 @@
+covert text based label to categorical attributes,
+for example we could convert the name of the priority to a integer [1,0,2]
+
+from sklearn.preprocessing import LabelEncoder
+encoder = LabelEncoder()
+housing_cat = housing["ocean_proximity"]
+housing_cat_encoded = encoder.fit_transform (housing_cat)
