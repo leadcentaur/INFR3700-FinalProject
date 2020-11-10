@@ -240,9 +240,9 @@ from sklearn.metrics import confusion_matrix
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
 
-'''
-# ------ Logistic Regression classifier ------
 
+# ------ Logistic Regression classifier ------
+'''
 lr_classifier = LogisticRegression(C=1.)
 y_score = lr_classifier.fit(trainX, trainY)
 print(f"Validation Accuracy of Logsitic Regression Classifier is: {(lr_classifier.score(validX, validY))*100:.2f}%")
@@ -285,78 +285,36 @@ plt.show()
 pred = cross_val_predict(lr_classifier, trainX, trainY, cv=3)
 print(pred.shape)
 
+print(f"Validation Accuracy of LR: {(lr_classifier.score(validX, validY))*100:.2f}%")
 print('F1 Score macro:', f1_score(trainY, pred, average='macro'))
 print('F1 Score micro:', f1_score(trainY, pred, average='micro'))
 print('F1 Score weighted:', f1_score(trainY, pred, average='weighted'))
-
-
-plt.plot(trainY, pred)
-plt.show()
 
 print('Confusion matrix: [[TN, FP],[FN,TP]', confusion_matrix(trainY, pred))
 print('Classes:', lr_classifier.classes_)
 '''
+
 # ------ Logistic Regression classifier ------
 
-
-# ------ SGDClassifier ------
-'''
-sgd_clf = SGDClassifier(random_state=42, max_iter=30, tol=1e-3)
-y_score = sgd_clf.fit(trainX, trainY)
-
-y = label_binarize(data['Y'], classes=[0, 1, 2])
-n_classes = y.shape[1]
-print(n_classes)
-
-# Compute ROC curve and ROC area for each class
-
-fpr = dict()
-tpr = dict()
-roc_auc = dict()
-for i in range(n_classes):
-    fpr[i], tpr[i], _ = roc_curve(y[i], y_score.coef_.T[i])
-    roc_auc[i] = auc(fpr[i], tpr[i])
-
-
-plt.figure()
-lw = 2
-plt.plot(fpr[2], tpr[2], color='darkorange',
-lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[2])
-plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver operating characteristic example')
-plt.legend(loc="lower right")
-plt.show()
-
-scores = cross_val_score(sgd_clf, trainX, trainY, cv=3, scoring="accuracy")
-print('Score for each fold:', scores)
-plt.plot(scores, marker='o', linestyle='--')
-plt.title("Score per fold")
-plt.show()
-
-
-#tag_predictions = sgd_clf.predict(validX)
-
-print(f"Validation Accuracy of SDG: {(sgd_clf.score(validX, validY))*100:.2f}%")
-
-pred = cross_val_predict(sgd_clf, trainX, trainY, cv=3)
-
-print('F1 Score macro:', f1_score(trainY, pred, average='macro'))
-print('F1 Score micro:', f1_score(trainY, pred, average='micro'))
-print('F1 Score weighted:', f1_score(trainY, pred, average='weighted'))
-
-print('Confusion matrix: [[TN, FP],[FN,TP]', confusion_matrix(trainY, pred))
-print('Classes:', sgd_clf.classes_)
-
-
-#from sklearn.metrics import precision_recall_curve
-
-#predictingBodyLength()
-'''
 # ------ OneVsRest ------
+
+
+def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Oranges):
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(['HQ','LQ_CLOSE','LQ_EDIT']))
+    plt.xticks(tick_marks, rotation=45)
+    ax = plt.gca()
+    ax.set_xticklabels((ax.get_xticks()).astype(str))
+    plt.yticks(tick_marks)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+    plt.show()
 
 classifier = OneVsRestClassifier(SGDClassifier(loss='log', alpha=0.00001, penalty='l1'), n_jobs=-1)
 y_score = classifier.fit(trainX, trainY).decision_function(validX)
@@ -364,9 +322,9 @@ y_score = classifier.fit(trainX, trainY).decision_function(validX)
 from sklearn import preprocessing
 y = preprocessing.label_binarize(trainY, classes=[0, 1, 2])
 
-predictions = classifier.predict(trainX)
-print(predictions)
-print(f"Validation Accuracy of SDG: {(classifier.score(validX, validY))*100:.2f}%")
+pred = classifier.predict(trainX)
+print(pred)
+print(f"Validation Accuracy of OvR SDG: {(classifier.score(validX, validY))*100:.2f}%")
 
 y_scores = cross_val_predict(classifier, trainX, y, cv=3, method="decision_function")
 
@@ -389,22 +347,23 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title('Receiver operating characteristic example')
+plt.title('Receiver operating characteristic FOR OneVsRestClassifier')
 plt.legend(loc="lower right")
 plt.show()
 
-plt.figure()
-plt.plot(fpr["micro"], tpr["micro"],
-         label='micro-average ROC curve (area = {0:0.2f})'
-               ''.format(roc_auc["micro"]),
-         color='deeppink', linestyle=':', linewidth=4)
-
-plt.plot(fpr["macro"], tpr["macro"],
-         label='macro-average ROC curve (area = {0:0.2f})'
-               ''.format(roc_auc["macro"]),
-         color='navy', linestyle=':', linewidth=4)
+scores = cross_val_score(classifier, trainX, trainY, cv=3, scoring="accuracy")
+print('Score for each fold:', scores)
+plt.plot(scores, marker='o', linestyle='--')
+plt.title("Score per fold")
 plt.show()
 
+cm = confusion_matrix(trainY, pred)
+plot_confusion_matrix(cm)
+
+plt.plot(y_scores)
+plt.title("Corss Validation scores")
+from sklearn.metrics import classification_report
+print(classification_report(trainY, pred, target_names=['HQ','LQ_EDIT','LQ_CLOSE']))
 # ------ OneVsRest ------
 
 
